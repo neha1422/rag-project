@@ -1,0 +1,24 @@
+# KrishiNyay direct runtime dependencies.
+# For a full local freeze, see requirements-full.txt.
+
+fastapi
+uvicorn
+pydantic
+requests
+beautifulsoup4
+lxml
+pdfplumber
+pypdf
+pypdfium2
+pytesseract
+Pillow
+pandas
+chromadb
+sentence-transformers
+scikit-learn
+numpy
+python-dotenv
+indic-nlp-library
+regex
+langchain
+langchain-text-splitters

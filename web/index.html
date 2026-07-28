@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KrishiNyay AI</title>
+    <link rel="stylesheet" href="/assets/styles.css?v=phase12-hardening" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#home" data-route="home">
+          <span class="brand-mark">
+            <img src="/assets/brand-icon.png" alt="" />
+          </span>
+          <span>
+            <strong>KrishiNyay AI</strong>
+            <small>Farmer RAG assistant</small>
+          </span>
+        </a>
+
+        <nav class="nav-list" aria-label="Main navigation">
+          <a href="#home" data-route="home" class="nav-item active">Home</a>
+          <a href="#chat" data-route="chat" class="nav-item">Chat</a>
+          <a href="#knowledge" data-route="knowledge" class="nav-item">Sources</a>
+          <a href="#ingest" data-route="ingest" class="nav-item">Ingest</a>
+          <a href="#system" data-route="system" class="nav-item">System</a>
+        </nav>
+
+        <div class="sidebar-card">
+          <span class="sticky-badge badge-green">Grounded RAG</span>
+          <span class="sticky-badge badge-yellow">250 Eval Qs</span>
+          <span class="sticky-badge badge-blue">Hybrid + OCR</span>
+          <span class="sticky-badge badge-pink">Live APIs</span>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">KrishiNyay AI</p>
+            <h1 id="pageTitle">A source-grounded farmer assistant for Indian schemes.</h1>
+          </div>
+          <div class="status-strip" id="statusStrip">
+            <span class="sticky-badge badge-gray">Checking system</span>
+          </div>
+        </header>
+
+        <section class="page active" id="page-home" aria-labelledby="landingTitle">
+          <div class="landing-hero">
+            <div class="landing-copy">
+              <div class="hero-badges">
+                <span class="sticky-badge badge-green">Guarded Workflow</span>
+                <span class="sticky-badge badge-yellow">250 Eval Checks</span>
+                <span class="sticky-badge badge-blue">Government Sources</span>
+              </div>
+              <h2 id="landingTitle">KrishiNyay AI explains schemes with citations instead of guesses.</h2>
+              <p>
+                The app now combines a 250-question farmer eval set, hybrid MiniLM
+                retrieval, OCR-ready PDF ingestion, Gemini/Ollama answer generation,
+                live-data routing, answer-quality gates, and production-readiness checks.
+              </p>
+              <div class="checklist-block">
+                <h3>Public demo mode</h3>
+                <p>
+                  The hosted demo is read-only: full Chroma retrieval stays enabled,
+                  but public document ingest is locked to prevent index poisoning.
+                </p>
+              </div>
+              <div class="landing-actions">
+                <a class="primary-link" href="#chat" data-route="chat">Open Chat</a>
+                <a class="secondary-link" href="#knowledge" data-route="knowledge">View Source Checks</a>
+              </div>
+              <div class="metric-grid" aria-label="Public demo prompts">
+                <button class="test-card" data-question="PM-KISAN mein kitna paisa milta hai?">
+                  <span class="sticky-badge badge-yellow">RAG</span>
+                  PM-KISAN amount
+                </button>
+                <button class="test-card" data-question="Land acquisition mein farmer ke rights kya hain?">
+                  <span class="sticky-badge badge-blue">Legal</span>
+                  Land rights
+                </button>
+                <button class="test-card" data-question="Kal baarish hogi kya, spraying karu?">
+                  <span class="sticky-badge badge-green">Live</span>
+                  Weather follow-up
+                </button>
+              </div>
+              <div class="hero-widget-row" aria-label="Project motion widgets">
+                <div class="animation-card large" data-motion-slot="hero" data-animation="farmer-ai">
+                  <div class="motion-farmer-ai">
+                    <div class="sun-orb"></div>
+                    <div class="field-lines"><span></span><span></span><span></span></div>
+                    <div class="farmer-avatar">
+                      <span class="turban"></span>
+                      <span class="face"></span>
+                      <span class="moustache"></span>
+                      <span class="body"></span>
+                      <span class="scarf"></span>
+                    </div>
+                    <div class="phone-card">
+                      <strong>AI</strong>
+                      <span></span><span></span><span></span>
+                    </div>
+                    <div class="holo-chip chip-one">Scheme</div>
+                    <div class="holo-chip chip-two">PMFBY</div>
+                    <div class="holo-chip chip-three">KCC</div>
+                  </div>
+                </div>
+                <div class="animation-card small" data-motion-slot="rag-flow" data-animation="rag-flow">
+                  <div class="animation-fallback flow-lines">
+                    <span>Language</span>
+                    <i></i>
+                    <span>Verify</span>
+                    <i></i>
+                    <span>Synthesize</span>
+                  </div>
+                </div>
+              </div>
+              <div class="phase-grid" id="phaseGrid" aria-label="Completed project phases">
+                <div class="empty-state">Loading phase status...</div>
+              </div>
+              <div class="recent-phase-grid" id="recentPhaseGrid" aria-label="Recent phase highlights">
+                <div class="empty-state">Loading recent Phase 4–7 highlights...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="explain-grid">
+            <article class="explain-card">
+              <div class="animation-slot" data-motion-slot="router" data-animation="router">
+                <div class="motion-router">
+                  <span class="router-core"></span>
+                  <span class="router-node node-live">Live</span>
+                  <span class="router-node node-rag">RAG</span>
+                  <span class="router-node node-safe">Safe</span>
+                </div>
+              </div>
+              <span class="sticky-badge badge-pink">Router</span>
+              <h3>Dynamic questions are intercepted first.</h3>
+              <p>Status, instalment, mandi-price, and weather questions go to live-source flows instead of stale RAG chunks.</p>
+            </article>
+            <article class="explain-card">
+              <div class="animation-slot" data-motion-slot="retrieval" data-animation="retrieval">
+                <div class="animation-fallback orbit-notes">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+              <span class="sticky-badge badge-blue">Retrieval</span>
+              <h3>Static scheme questions use hybrid retrieval.</h3>
+              <p>MiniLM semantic search stays primary while lexical scoring improves exact scheme/source matches.</p>
+            </article>
+            <article class="explain-card">
+              <div class="animation-slot" data-motion-slot="sources" data-animation="sources">
+                <div class="animation-fallback source-stack">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+              <span class="sticky-badge badge-green">Citations</span>
+              <h3>Answers show workflow evidence and status.</h3>
+              <p>The chat page shows language, planner, tool, verifier, synthesis, source chunks, and provider metadata.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-chat" aria-labelledby="chatTitle">
+          <div class="chat-grid">
+            <section class="panel chat-panel">
+              <div class="panel-head">
+                <div>
+                  <h2 id="chatTitle">Farmer Chat</h2>
+                <p>Ask in Hindi, Hinglish, or English. The trace shows language, route, verifier, and field preview.</p>
+                </div>
+                <span class="sticky-badge badge-yellow" id="modeBadge">Ready</span>
+              </div>
+
+              <div class="examples" id="examples">
+                <button>PM-KISAN mein kitne paise milte hain?</button>
+                <button>PMFBY mein kharif premium kitna hota hai?</button>
+                <button>Mera PM-KISAN status kya hai?</button>
+                <button>Maharashtra Namo Shetkari se kitna milta hai?</button>
+              </div>
+
+              <div class="messages" id="messages" aria-live="polite">
+                <article class="message assistant">
+                  <div class="avatar">AI</div>
+                  <div class="bubble">
+                    <p>Namaste. Ask a scheme, crop insurance, credit, or land-rights question. I will show the retrieved government chunks on the right.</p>
+                  </div>
+                </article>
+              </div>
+
+              <form class="composer" id="queryForm">
+                <textarea id="questionInput" rows="2" placeholder="Type your question..."></textarea>
+                <button type="submit" id="sendButton">Ask</button>
+              </form>
+            </section>
+
+            <aside class="panel source-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Retrieved Sources</h2>
+                  <p>Chunks, live evidence, verifier state, and field-ready preview for the latest answer.</p>
+                </div>
+                <span class="sticky-badge badge-blue" id="sourceCount">0 chunks</span>
+              </div>
+              <div class="route-trace" id="routeTrace">
+                <span class="sticky-badge badge-gray">No query yet</span>
+                <p>Ask a question to see whether the backend used static RAG or the dynamic live-data router.</p>
+              </div>
+              <div class="source-list" id="sourceList">
+                <div class="empty-state">Sources will appear after your first RAG answer.</div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="page" id="page-knowledge" aria-labelledby="knowledgeTitle">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2 id="knowledgeTitle">Knowledge Surface</h2>
+                <p>Use these checks to show recruiters what the system retrieves.</p>
+              </div>
+              <span class="sticky-badge badge-green">Source-first UI</span>
+            </div>
+            <div class="metric-grid">
+              <button class="test-card" data-question="PM-KISAN ka helpline number kya hai?">
+                <span class="sticky-badge badge-yellow">FAQ</span>
+                PM-KISAN helpline
+              </button>
+              <button class="test-card" data-question="Kisan Credit Card ke liye kaise apply karein?">
+                <span class="sticky-badge badge-blue">Scheme</span>
+                KCC application
+              </button>
+              <button class="test-card" data-question="Fasal bima ka premium kitna hota hai kharif crops ke liye?">
+                <span class="sticky-badge badge-pink">Guidelines</span>
+                PMFBY premium
+              </button>
+              <button class="test-card" data-question="Maharashtra mein farmers ko kya extra scheme milti hai?">
+                <span class="sticky-badge badge-green">State</span>
+                Maharashtra support
+              </button>
+              <button class="test-card" data-question="Mera PM-KISAN beneficiary status kya hai?">
+                <span class="sticky-badge badge-pink">Live</span>
+                PM-KISAN status router
+              </button>
+              <button class="test-card" data-question="Aaj soybean ka mandi bhav kya hai?">
+                <span class="sticky-badge badge-blue">Market</span>
+                Mandi live router
+              </button>
+              <button class="test-card" data-question="Kal Pune mein baarish hogi kya, spraying karu?">
+                <span class="sticky-badge badge-green">Weather</span>
+                Live weather advisory
+              </button>
+            </div>
+            <div class="validation-grid" id="validationGrid" aria-label="Validation gates">
+              <div class="empty-state">Loading validation gates...</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="page-ingest" aria-labelledby="ingestTitle">
+          <div class="panel wide-panel">
+            <div class="panel-head">
+              <div>
+                <h2 id="ingestTitle">Live Document Ingest</h2>
+                <p>Add a small document to ChromaDB without rebuilding the full corpus.</p>
+              </div>
+              <span class="sticky-badge badge-pink">Live index</span>
+            </div>
+
+            <form class="ingest-form" id="ingestForm">
+              <label>
+                Title
+                <input id="ingestTitleInput" required minlength="2" placeholder="New scheme circular" />
+              </label>
+              <label>
+                URL
+                <input id="ingestUrlInput" placeholder="https://official-source.gov.in/..." />
+              </label>
+              <label>
+                Admin token
+                <input id="ingestTokenInput" type="password" autocomplete="off" placeholder="Optional LIVE_INGEST_TOKEN" />
+              </label>
+              <div class="form-row">
+                <label>
+                  Category
+                  <input id="ingestCategoryInput" value="scheme" />
+                </label>
+                <label>
+                  State
+                  <input id="ingestStateInput" value="central" />
+                </label>
+                <label>
+                  Doc type
+                  <input id="ingestDocTypeInput" value="Guidelines" />
+                </label>
+              </div>
+              <label>
+                Document text
+                <textarea id="ingestTextInput" required minlength="40" rows="8" placeholder="Paste cleaned government text here..."></textarea>
+              </label>
+              <button type="submit">Index Document</button>
+              <p class="form-note" id="ingestResult">Live ingest is disabled unless ENABLE_LIVE_INGEST=true.</p>
+            </form>
+          </div>
+        </section>
+
+        <section class="page" id="page-system" aria-labelledby="systemTitle">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2 id="systemTitle">System Health</h2>
+                <p>Deployment readiness and active backend mode.</p>
+              </div>
+              <button class="ghost-button" id="refreshHealth">Refresh</button>
+            </div>
+            <div class="health-grid" id="healthGrid">
+              <div class="empty-state">Loading system state...</div>
+            </div>
+            <div class="api-key-guide" id="apiKeyGuide">
+              <div class="empty-state">Loading API key setup guidance...</div>
+            </div>
+            <div class="demo-checklist" id="demoChecklist">
+              <div class="empty-state">Loading remaining work...</div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/assets/app.js?v=phase12-hardening"></script>
+  </body>
+</html>

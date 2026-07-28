@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+krishinyay-env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / IDE
+.DS_Store
+.vscode/
+
+# Local secrets/config
+.env
+.env.local
+.env.*
+!.env.example
+secrets/
+*.secret
+*.token
+*.key
+*.pem
+
+# Optional large local demo media
+web/media/*.mp4
+web/media/*.mov
+web/media/*.webm
+
+# Local generated retrieval artifacts stay untracked.
+# Public demo artifacts are intentionally allowed as demo_chroma_db/ and demo_data/.
+chroma_db/
+data/
+logs/
+*.log
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+outputs/
+work/
