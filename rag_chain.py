@@ -112,45 +112,37 @@ def _call_anthropic(prompt: str) -> str:
     )
     return msg.content[0].text.strip()
 
-
 def _call_gemini(prompt: str) -> str:
-    """Call Gemini REST API without adding a Google SDK dependency."""
-    import requests
+    """Call Gemini using the official Google GenAI SDK."""
+    import os
+    from google import genai
 
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("Gemini API key is not configured.")
-    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
-    url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
-        f"{model}:generateContent"
-    )
+
+    client = genai.Client(api_key=api_key)
+
+    model = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
+
     try:
-        resp = requests.post(
-            url,
-            headers={
-                "Content-Type": "application/json",
-                "x-goog-api-key": api_key,
-            },
-            json={"contents": [{"parts": [{"text": prompt}]}]},
-            timeout=60,
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt,
         )
-    except requests.Timeout as exc:
-        raise RuntimeError("Gemini request timed out.") from exc
-    except requests.RequestException as exc:
-        raise RuntimeError("Gemini request failed.") from exc
-
-    if resp.status_code >= 400:
-        log.warning("Gemini API returned HTTP %s", resp.status_code)
-        raise RuntimeError("Gemini request failed.")
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        raise
 
     try:
-        data = resp.json()
-        answer = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-    except (ValueError, KeyError, IndexError, TypeError) as exc:
+        answer = response.text.strip()
+    except Exception as exc:
         raise RuntimeError("Gemini returned an unusable response.") from exc
+
     if not answer:
         raise RuntimeError("Gemini returned an empty response.")
+
     return answer
 
 

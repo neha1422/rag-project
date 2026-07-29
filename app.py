@@ -15,6 +15,9 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+# ---------- Prometheus ----------
+from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import Counter, Histogram
 from live_data import (
     get_mandi_price_snapshot,
     get_weather_forecast,
@@ -33,6 +36,38 @@ WEB_DIR = ROOT / "web"
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(message)s")
 log = logging.getLogger("krishinyay.app")
 
+# ---------- Custom Prometheus Metrics ----------
+# ---------- Custom Prometheus Metrics ----------
+
+REQUEST_COUNTER = Counter(
+    "krishinyay_requests_total",
+    "Total requests received by the query endpoint",
+)
+
+QUERY_COUNTER = Counter(
+    "krishinyay_queries_total",
+    "Total farmer queries processed",
+)
+
+RAG_COUNTER = Counter(
+    "krishinyay_rag_queries_total",
+    "Queries routed to the RAG workflow",
+)
+
+LIVE_COUNTER = Counter(
+    "krishinyay_live_queries_total",
+    "Queries routed to live APIs",
+)
+
+GEMINI_COUNTER = Counter(
+    "krishinyay_gemini_calls_total",
+    "Generation calls made using Gemini",
+)
+
+QUERY_LATENCY = Histogram(
+    "krishinyay_query_latency_seconds",
+    "Time spent processing farmer queries",
+)
 QUERY_RATE_LIMIT_MAX_REQUESTS = 15
 QUERY_RATE_LIMIT_WINDOW_SECONDS = 6 * 60 * 60
 SESSION_COOKIE_NAME = "krishinyay_session"
@@ -55,7 +90,8 @@ app = FastAPI(
     description="Source-grounded RAG assistant for Indian agriculture schemes.",
     version="0.4.0",
 )
-
+# ---------- Enable Prometheus Metrics ----------
+Instrumentator().instrument(app).expose(app)
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
@@ -700,11 +736,15 @@ def route_dynamic_query(
 
     return None
 
-
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=8)
 def get_chain(n_results: int) -> RAGChain:
     return RAGChain(n_results=n_results)
 
+
+def track_generation_call(chain: RAGChain) -> None:
+    """Increment the Gemini metric only when Gemini is the active provider."""
+    if chain.llm_provider == "gemini":
+        GEMINI_COUNTER.inc()
 
 def infer_doc_type(source: dict) -> str:
     if source.get("doc_type") == "System Metadata":
@@ -993,12 +1033,20 @@ def verify_workflow_evidence(
         "category_match": category_match,
         "live_status": live_status,
     }
-
-
 @app.post("/query")
-def query(payload: QueryRequest, request: Request, response: Response):
-    enforce_query_rate_limit(request, response)
+@QUERY_LATENCY.time()
+def query(
+    payload: QueryRequest,
+    request: Request,
+    http_response: Response,
+):
+    REQUEST_COUNTER.inc()
+    QUERY_COUNTER.inc()
+
     started_at = time.perf_counter()
+
+    enforce_query_rate_limit(request, http_response)
+
     decision = plan_query_workflow(
         payload.question,
         workflow_context=payload.workflow_context,
@@ -1009,6 +1057,14 @@ def query(payload: QueryRequest, request: Request, response: Response):
         market=payload.market,
     )
 
+    # Count only actual RAG and live-data routes.
+    if decision["action"] == "dynamic":
+        LIVE_COUNTER.inc()
+    elif decision["action"] == "rag":
+        RAG_COUNTER.inc()
+
+    # ---------------- Clarification workflow ----------------
+
     if decision["action"] == "clarification":
         verifier = {
             "status": "needs_more_input",
@@ -1018,7 +1074,8 @@ def query(payload: QueryRequest, request: Request, response: Response):
             "category_match": True,
             "live_status": None,
         }
-        return finalize_query_response({
+
+        result = {
             "question": payload.question,
             "answer": decision["answer"],
             "sources": [],
@@ -1027,13 +1084,20 @@ def query(payload: QueryRequest, request: Request, response: Response):
             "route_reason": decision["route_reason"],
             "n_chunks": 0,
             "llm_provider": "workflow",
+            "generation_status": "clarification",
+            "generation_error": None,
             "evidence_verified": False,
             "evidence_verifier": verifier,
             **workflow_metadata(decision, payload),
-        }, started_at)
+        }
+
+        return finalize_query_response(result, started_at)
+
+    # ---------------- System-information workflow ----------------
 
     if decision["action"] == "system_info":
         system_info = route_system_query(decision["question"])
+
         if system_info:
             verifier = {
                 "status": "passed",
@@ -1043,7 +1107,8 @@ def query(payload: QueryRequest, request: Request, response: Response):
                 "category_match": True,
                 "live_status": None,
             }
-            return finalize_query_response({
+
+            result = {
                 "question": payload.question,
                 "answer": system_info["answer"],
                 "sources": enrich_sources(system_info["sources"]),
@@ -1052,13 +1117,52 @@ def query(payload: QueryRequest, request: Request, response: Response):
                 "route_reason": system_info["route_reason"],
                 "n_chunks": 0,
                 "llm_provider": system_info["llm_provider"],
+                "generation_status": "system_direct",
+                "generation_error": None,
                 "evidence_verified": True,
                 "evidence_verifier": verifier,
                 **workflow_metadata(decision, payload),
-            }, started_at)
+            }
+
+            return finalize_query_response(result, started_at)
+
+        result = {
+            "question": payload.question,
+            "answer": (
+                "System information is temporarily unavailable. "
+                "Please try again later."
+            ),
+            "sources": [],
+            "mode": "workflow",
+            "route": "system_info",
+            "route_reason": "system_information_unavailable",
+            "n_chunks": 0,
+            "llm_provider": "workflow",
+            "generation_status": "system_fallback",
+            "generation_error": None,
+            "evidence_verified": False,
+            "evidence_verifier": {
+                "status": "failed",
+                "route_match": False,
+                "has_sources": False,
+                "expected_category": "system",
+                "category_match": False,
+                "live_status": None,
+            },
+            **workflow_metadata(
+                decision,
+                payload,
+                answer_kind="template_fallback",
+            ),
+        }
+
+        return finalize_query_response(result, started_at)
+
+    # ---------------- Dynamic/live-data workflow ----------------
 
     if decision["action"] == "dynamic":
         slots = decision["filled_slots"]
+
         dynamic = route_dynamic_query(
             decision["question"],
             state=slots.get("state") or payload.state,
@@ -1068,30 +1172,42 @@ def query(payload: QueryRequest, request: Request, response: Response):
             market=slots.get("market") or payload.market,
             answer_language=decision["answer_language"],
         )
+
         if dynamic:
-            sources = enrich_sources(dynamic["sources"])
+            sources = enrich_sources(dynamic.get("sources", []))
+
             verifier = verify_workflow_evidence(
                 decision=decision,
-                route=dynamic["route"],
+                route=dynamic.get("route", ""),
                 sources=sources,
                 live_status=dynamic.get("live_status"),
             )
+
             synthesis = {
                 "answer": dynamic["answer"],
                 "llm_provider": "router",
                 "generation_status": "router_direct",
                 "generation_error": None,
             }
+
+            # Only synthesize when live evidence passed verification.
             if verifier["status"] == "passed":
                 chain = get_chain(payload.n_results)
+                track_generation_call(chain)
+
                 synthesis = chain.synthesize_from_evidence(
                     question=payload.question,
                     evidence=dynamic["answer"],
                     sources=sources,
                     answer_language=decision["answer_language"],
                 )
-            generation_status = synthesis.get("generation_status", "")
-            response = {
+
+            generation_status = synthesis.get(
+                "generation_status",
+                "router_direct",
+            )
+
+            result = {
                 "question": payload.question,
                 "answer": synthesis["answer"],
                 "sources": sources,
@@ -1099,7 +1215,10 @@ def query(payload: QueryRequest, request: Request, response: Response):
                 "route": dynamic["route"],
                 "route_reason": dynamic["route_reason"],
                 "n_chunks": 0,
-                "llm_provider": synthesis.get("llm_provider", "router"),
+                "llm_provider": synthesis.get(
+                    "llm_provider",
+                    "router",
+                ),
                 "generation_status": generation_status,
                 "generation_error": synthesis.get("generation_error"),
                 "evidence_verified": verifier["status"] == "passed",
@@ -1107,23 +1226,40 @@ def query(payload: QueryRequest, request: Request, response: Response):
                 **workflow_metadata(
                     decision,
                     payload,
-                    answer_kind="generated" if generation_status.startswith("generated") else "router_direct",
+                    answer_kind=(
+                        "generated"
+                        if generation_status.startswith("generated")
+                        else "router_direct"
+                    ),
                 ),
             }
-            for key in ["live_status", "data_provider", "fetched_at", "live_data"]:
-                if key in dynamic:
-                    response[key] = dynamic[key]
-            return finalize_query_response(response, started_at)
 
-        return finalize_query_response({
+            for key in [
+                "live_status",
+                "data_provider",
+                "fetched_at",
+                "live_data",
+            ]:
+                if key in dynamic:
+                    result[key] = dynamic[key]
+
+            return finalize_query_response(result, started_at)
+
+        result = {
             "question": payload.question,
-            "answer": "I understood this as a live-data question, but I could not route it safely. Please add the missing commodity, location, or scheme details.",
+            "answer": (
+                "I understood this as a live-data question, but I could "
+                "not route it safely. Please add the missing commodity, "
+                "location, or scheme details."
+            ),
             "sources": [],
             "mode": "workflow",
             "route": "workflow",
             "route_reason": "dynamic_route_unavailable",
             "n_chunks": 0,
             "llm_provider": "workflow",
+            "generation_status": "dynamic_route_failed",
+            "generation_error": None,
             "evidence_verified": False,
             "evidence_verifier": {
                 "status": "failed",
@@ -1133,34 +1269,58 @@ def query(payload: QueryRequest, request: Request, response: Response):
                 "category_match": False,
                 "live_status": None,
             },
-            **workflow_metadata(decision, payload, answer_kind="clarification"),
-        }, started_at)
+            **workflow_metadata(
+                decision,
+                payload,
+                answer_kind="clarification",
+            ),
+        }
+
+        return finalize_query_response(result, started_at)
+
+    # ---------------- Standard RAG workflow ----------------
 
     chain = get_chain(payload.n_results)
-    response = chain.ask(
+    track_generation_call(chain)
+
+    rag_result = chain.ask(
         decision["question"],
         category=payload.category,
         state=decision["filled_slots"].get("state") or payload.state,
         answer_language=decision["answer_language"],
     )
-    response["sources"] = enrich_sources(response.get("sources", []))
+
+    rag_result["sources"] = enrich_sources(
+        rag_result.get("sources", [])
+    )
+
     verifier = verify_workflow_evidence(
         decision=decision,
-        route=response.get("route", ""),
-        sources=response["sources"],
+        route=rag_result.get("route", ""),
+        sources=rag_result["sources"],
     )
-    generation_status = response.get("generation_status", "")
-    response["evidence_verified"] = verifier["status"] == "passed"
-    response["evidence_verifier"] = verifier
-    response.update(
+
+    generation_status = rag_result.get(
+        "generation_status",
+        "",
+    )
+
+    rag_result["evidence_verified"] = verifier["status"] == "passed"
+    rag_result["evidence_verifier"] = verifier
+
+    rag_result.update(
         workflow_metadata(
             decision,
             payload,
-            answer_kind="generated" if generation_status.startswith("generated") else "template_fallback",
+            answer_kind=(
+                "generated"
+                if generation_status.startswith("generated")
+                else "template_fallback"
+            ),
         )
     )
-    return finalize_query_response(response, started_at)
 
+    return finalize_query_response(rag_result, started_at)
 
 @app.post("/ingest", response_model=IngestResponse)
 def ingest(payload: IngestRequest, x_ingest_token: Optional[str] = Header(default=None)):
