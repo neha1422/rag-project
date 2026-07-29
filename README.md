@@ -2,6 +2,8 @@
 
 KrishiNyay AI follows a modular Retrieval-Augmented Generation (RAG) architecture designed to provide accurate, source-grounded answers for Indian farmers. The system combines semantic retrieval, workflow-based routing, live government APIs, and LLM-based generation while ensuring every response is backed by trusted evidence.
 
+
+
 ### Client Layer
 
 The application provides a lightweight web interface built using HTML, CSS, and JavaScript. Farmers can ask questions in English, Hindi, or Hinglish. Every request is sent to the FastAPI backend, which returns the generated answer along with supporting sources and workflow metadata.
@@ -151,3 +153,5 @@ The project can be deployed locally or on cloud platforms such as Hugging Face S
 | LLM | Gemini, Ollama |
 | Monitoring | Prometheus, Grafana |
 | Deployment | Docker |
+
+<img width="781" height="519" alt="Screenshot 2026-07-30 at 2 10 34 AM" src="https://github.com/user-attachments/assets/75ff6aad-3cf1-44bb-b955-1201727ba9d7" />
