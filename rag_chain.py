@@ -131,6 +131,12 @@ def _call_gemini(prompt: str) -> str:
         },
         timeout=60,
     )
+    if not response.ok:
+        try:
+            status = str(response.json().get("error", {}).get("status", "unknown"))
+        except ValueError:
+            status = "unknown"
+        log.warning("Gemini API rejected request: HTTP %s, status=%s", response.status_code, status if re.fullmatch(r"[A-Z_]+", status) else "unknown")
     response.raise_for_status()
     candidates = response.json().get("candidates") or []
     parts = (candidates[0].get("content") or {}).get("parts", []) if candidates else []

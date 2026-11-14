@@ -15,6 +15,7 @@ Weather:
 from __future__ import annotations
 
 import os
+import logging
 import re
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -139,9 +140,26 @@ def _sanitize_live_error(exc: Exception) -> str:
 
 
 def _request_json(url: str, params: dict[str, Any], timeout: int = 12) -> dict[str, Any]:
-    response = requests.get(url, params=params, timeout=timeout)
-    response.raise_for_status()
-    return response.json()
+    try:
+        response = requests.get(url, params=params, timeout=timeout)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as exc:
+        root = exc
+        for _ in range(8):
+            nested = root.__cause__ or root.__context__
+            if nested is None or nested is root:
+                break
+            root = nested
+        response = getattr(exc, "response", None)
+        logging.getLogger("krishinyay.live_data").warning(
+            "Live API request failed: provider=%s, error=%s, cause=%s, http_status=%s, tls_code=%s",
+            "agmarknet" if url.startswith(AGMARKNET_API_BASE) else "weather",
+            type(exc).__name__, type(root).__name__,
+            response.status_code if response is not None else None,
+            getattr(root, "verify_code", None),
+        )
+        raise
 
 
 def _find_alias(text: str, aliases: dict[str, str]) -> Optional[str]:
