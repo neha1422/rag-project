@@ -27,3 +27,34 @@ jobs:
       - run: python run_regression_suite.py --skip-generation
       - run: docker compose config --quiet
       - run: python -m unittest discover -s tests
+  docker-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config --quiet
+      - run: docker build -t krishinyay:test .
+      - name: Verify the container, index, OCR and metrics
+        run: |
+          docker run -d --name krishinyay-test -p 8000:7860 -e LLM_PROVIDER=template -e DEMO_PUBLIC=true krishinyay:test
+          python - <<'PYTHON'
+          import json, time, urllib.request
+          for attempt in range(60):
+              try:
+                  with urllib.request.urlopen('http://localhost:8000/health', timeout=10) as response:
+                      health = json.load(response)
+                  break
+              except Exception:
+                  time.sleep(2)
+          else:
+              raise SystemExit('Container did not become healthy')
+          assert health['total_chunks'] == 1748
+          assert health['embedding_dim'] == 384
+          assert health['readiness']['ocr_ready']
+          assert health['readiness']['indic_ocr_ready']
+          with urllib.request.urlopen('http://localhost:8000/metrics') as response:
+              assert response.status == 200
+          print('Docker health, full index, Indic OCR and metrics passed')
+          PYTHON
+      - if: failure()
+        run: docker logs krishinyay-test || true
