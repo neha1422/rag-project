@@ -141,7 +141,7 @@ def _sanitize_live_error(exc: Exception) -> str:
 
 def _request_json(url: str, params: dict[str, Any], timeout: int = 12) -> dict[str, Any]:
     try:
-        response = requests.get(url, params=params, timeout=timeout)
+        response = requests.get(url, params=params, timeout=(3, timeout))
         response.raise_for_status()
         return response.json()
     except requests.RequestException as exc:

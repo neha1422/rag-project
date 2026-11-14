@@ -16,5 +16,8 @@
     "HF_HUB_OFFLINE": "1",
     "TRANSFORMERS_OFFLINE": "1",
     "LLM_PROVIDER": "auto"
-  }
+  },
+  "regions": [
+    "bom1"
+  ]
 }

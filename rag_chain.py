@@ -119,7 +119,7 @@ def _call_gemini(prompt: str) -> str:
     api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("Gemini API key is not configured.")
-    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite").strip()
+    model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite").strip()
     if not re.fullmatch(r"[A-Za-z0-9._-]+", model):
         raise RuntimeError("Invalid Gemini model name.")
     response = requests.post(

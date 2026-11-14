@@ -25,7 +25,7 @@ PUBLIC_VARIABLES = {
     "CHROMA_PATH": "demo_chroma_db",
     "CHUNKS_DIR": "demo_data/chunks",
     "LLM_PROVIDER": "gemini",
-    "GEMINI_MODEL": "gemini-2.5-flash-lite",
+    "GEMINI_MODEL": "gemini-3.5-flash-lite",
     "HF_HUB_OFFLINE": "0",
     "TRANSFORMERS_OFFLINE": "0",
 }

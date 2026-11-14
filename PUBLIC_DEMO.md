@@ -24,7 +24,7 @@ ENABLE_LIVE_INGEST=false
 CHROMA_PATH=demo_chroma_db
 CHUNKS_DIR=demo_data/chunks
 LLM_PROVIDER=gemini
-GEMINI_MODEL=gemini-2.5-flash-lite
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
 Set `GEMINI_API_KEY` as a Hugging Face Space Secret. Do not set it as a public Space variable, commit it to Git, or expose it through frontend code.
@@ -84,7 +84,7 @@ ENABLE_LIVE_INGEST=false
 CHROMA_PATH=demo_chroma_db
 CHUNKS_DIR=demo_data/chunks
 LLM_PROVIDER=gemini
-GEMINI_MODEL=gemini-2.5-flash-lite
+GEMINI_MODEL=gemini-3.5-flash-lite
 HF_HUB_OFFLINE=0
 TRANSFORMERS_OFFLINE=0
 ```
