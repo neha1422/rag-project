@@ -22,7 +22,7 @@ def check_ocr_dependencies() -> dict[str, Any]:
     tesseract_path = shutil.which("tesseract")
 
     engine = ""
-    if pytesseract_available:
+    if pytesseract_available and tesseract_path:
         engine = "pytesseract"
     elif tesseract_path:
         engine = "tesseract_cli"
@@ -117,7 +117,7 @@ def _missing_dependencies(renderer_available: bool, engine: str) -> list[str]:
     if not renderer_available:
         missing.append("pypdfium2")
     if not engine:
-        missing.append("pytesseract or tesseract CLI")
+        missing.append("Tesseract executable")
     return missing
 
 

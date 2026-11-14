@@ -1,0 +1,45 @@
+[project]
+name = "krishinyay-ai"
+version = "0.4.1"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi",
+  "uvicorn",
+  "pydantic",
+  "requests",
+  "beautifulsoup4",
+  "lxml",
+  "pdfplumber",
+  "pypdf",
+  "pypdfium2",
+  "pytesseract",
+  "Pillow",
+  "pandas",
+  "chromadb",
+  "sentence-transformers",
+  "scikit-learn",
+  "numpy",
+  "python-dotenv",
+  "indic-nlp-library",
+  "regex",
+  "langchain",
+  "langchain-text-splitters",
+  "prometheus-client>=0.20,<1",
+  "prometheus-fastapi-instrumentator>=7,<8",
+  "httpx>=0.28,<1",
+  "torch==2.8.0"
+]
+
+[tool.vercel]
+entrypoint = "app:app"
+
+[tool.vercel.scripts]
+build = "python build_model.py"
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]

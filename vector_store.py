@@ -18,8 +18,8 @@ import chromadb
 log = logging.getLogger("krishinyay.vector_store")
 
 ROOT       = Path(__file__).resolve().parent
-DEFAULT_CHROMA_DIR = ROOT / "chroma_db"
-DEFAULT_CHUNKS_DIR = ROOT / "data" / "chunks"
+DEFAULT_CHROMA_DIR = ROOT / ("chroma_db" if (ROOT / "chroma_db" / "chroma.sqlite3").exists() else "demo_chroma_db")
+DEFAULT_CHUNKS_DIR = ROOT / ("data" if (ROOT / "data" / "chunks" / "all_chunks.jsonl").exists() else "demo_data") / "chunks"
 COLLECTION = "krishinyay_v1"
 
 LEXICAL_STOPWORDS = {
@@ -197,7 +197,7 @@ class VectorStore:
             from sentence_transformers import SentenceTransformer
             local_files_only = self._env_flag("HF_HUB_OFFLINE") or self._env_flag("TRANSFORMERS_OFFLINE")
             model = SentenceTransformer(
-                "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+                str(ROOT / "models" / "minilm") if (ROOT / "models" / "minilm").exists() else "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
                 local_files_only=local_files_only,
             )
             model_dim = model.get_sentence_embedding_dimension()

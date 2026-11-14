@@ -1,0 +1,29 @@
+name: Validate KrishiNyay AI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      LLM_PROVIDER: template
+      CHROMA_PATH: demo_chroma_db
+      CHUNKS_DIR: demo_data/chunks
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-hin tesseract-ocr-mar tesseract-ocr-pan fonts-dejavu-core
+      - run: pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+      - run: pip install -r requirements.txt
+      - run: python build_model.py
+      - run: python run_regression_suite.py --skip-generation
+      - run: docker compose config --quiet
+      - run: python -m unittest discover -s tests

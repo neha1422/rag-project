@@ -48,3 +48,7 @@ logs/
 .ruff_cache/
 outputs/
 work/
+
+# Deployment state and generated embedding model
+.vercel/
+models/

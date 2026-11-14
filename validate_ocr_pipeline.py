@@ -46,6 +46,7 @@ def load_test_font(size: int):
     from PIL import ImageFont
 
     candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/System/Library/Fonts/Supplemental/Arial.ttf",
         "/System/Library/Fonts/Supplemental/Helvetica.ttf",
         "/Library/Fonts/Arial.ttf",

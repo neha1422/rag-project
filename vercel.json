@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "functions": {
+    "app.py": {
+      "maxDuration": 300,
+      "excludeFiles": "{.venv/**,.git/**,requirements-full.txt,requirements copy.txt}"
+    }
+  },
+  "env": {
+    "DEMO_PUBLIC": "true",
+    "ENABLE_LIVE_INGEST": "false",
+    "CHROMA_PATH": "demo_chroma_db",
+    "CHUNKS_DIR": "demo_data/chunks",
+    "CHROMA_RUNTIME_COPY": "true",
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1",
+    "LLM_PROVIDER": "auto"
+  }
+}

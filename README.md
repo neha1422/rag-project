@@ -1,3 +1,63 @@
+# KrishiNyay AI
+
+A multilingual, source-grounded assistant for Indian farmers, with FastAPI, MiniLM + Chroma hybrid retrieval, live weather and mandi routing, and a browser interface.
+
+## Run locally
+
+Use Python 3.12 and Node 22 or newer. The repository includes the 1,748-chunk demo index; no ingestion is needed to start.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+Open http://localhost:8000. The first retrieval downloads the multilingual MiniLM model unless it is already cached. `build_model.py` bundles the pinned model for deployments. Existing `chroma_db/` and `data/chunks/` directories take precedence locally; otherwise the packaged demo is used. Explicit `CHROMA_PATH` and `CHUNKS_DIR` override those defaults.
+
+Configure `GEMINI_API_KEY` in `.env` for Gemini generation, and `DATA_GOV_IN_API_KEY` for live Agmarknet prices. With no generation key or local Ollama model, the app returns clearly labelled source-grounded template answers. PM-KISAN personal status is checked through the official portal; this app does not retrieve private beneficiary records.
+
+For scanned PDFs, install Tesseract and its English, Hindi, Marathi, and Punjabi language packs. The Python wrapper alone does not provide an OCR executable.
+
+## Docker and monitoring
+
+```bash
+docker compose up --build -d
+```
+
+This starts the app on http://localhost:8000, Prometheus on http://localhost:9090, and Grafana on http://localhost:3000. Grafana provisions the Prometheus datasource and the KrishiNyay AI dashboard automatically. Monitoring ports bind to localhost. Grafana and Prometheus data persist in named volumes. The Docker image includes Tesseract and Indic language packs. Optional secrets come from `.env`; never commit that file.
+
+## Vercel
+
+Import this repository with the FastAPI preset, or run:
+
+```bash
+vercel link
+vercel env add GEMINI_API_KEY production
+# Optional, for live mandi prices:
+vercel env add DATA_GOV_IN_API_KEY production
+vercel --prod
+```
+
+`vercel.json` enables public mode, disables ingestion, and uses the packaged Chroma index with a writable temporary copy. `pyproject.toml` selects Python 3.12 and Linux CPU-only PyTorch. The build bundles a pinned 384-dimensional MiniLM model so requests do not need to download it. The model and ML libraries may require Vercel Large Functions; enable `VERCEL_SUPPORT_LARGE_FUNCTIONS=1` if the project requests it. See [Vercel FastAPI deployment](https://vercel.com/docs/frameworks/backend/fastapi) and [function limits](https://vercel.com/docs/functions/limitations).
+
+Vercel runs the web app and API. Use the Docker deployment for the full Prometheus/Grafana stack and scanned-PDF ingestion with system Tesseract. In-memory query limits and metrics are per function instance on Vercel and reset on cold starts; use shared infrastructure for a global production quota or continuous metrics collection. Public ingestion stays disabled, so the packaged index is not modified by visitors.
+
+## Verification
+
+```bash
+python build_model.py
+LLM_PROVIDER=template python run_regression_suite.py --skip-generation
+python -m unittest discover -s tests
+node --check web/app.js
+docker compose config --quiet
+```
+
+GitHub Actions runs the regression suite on Python 3.12 with Tesseract installed. Offline validators mock external services where appropriate; passing them does not verify live provider credentials. Run `python validate_public_demo.py --require-gemini` after configuring Gemini to check the hosted generation setup. Run the optional Ollama generation gate only when the local model is available.
+
+`GET /health` reports index, language model, API, and OCR readiness. `GET /metrics` exposes Prometheus metrics. Check a real `/query` response after every deployment. See [PUBLIC_DEMO.md](PUBLIC_DEMO.md) for Hugging Face Docker hosting and the farmer demo script.
+
 ## 🏗️ Architecture
 
 KrishiNyay AI follows a modular Retrieval-Augmented Generation (RAG) architecture designed to provide accurate, source-grounded answers for Indian farmers. The system combines semantic retrieval, workflow-based routing, live government APIs, and LLM-based generation while ensuring every response is backed by trusted evidence.

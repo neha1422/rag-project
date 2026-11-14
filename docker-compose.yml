@@ -1,23 +1,40 @@
 services:
+  app:
+    build: .
+    ports:
+      - "8000:7860"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: "7860"
+      CHROMA_PATH: demo_chroma_db
+      CHUNKS_DIR: demo_data/chunks
+      CHROMA_RUNTIME_COPY: "true"
+    restart: unless-stopped
 
   prometheus:
-    image: prom/prometheus
-
-    container_name: prometheus
-
+    image: prom/prometheus:v3.5.0
     ports:
-      - "9090:9090"
-
+      - "127.0.0.1:9090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - app
+    restart: unless-stopped
 
   grafana:
-    image: grafana/grafana-oss
-
-    container_name: grafana
-
+    image: grafana/grafana-oss:12.1.0
     ports:
-      - "3000:3000"
-
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/provisioning:/etc/grafana/provisioning:ro
     depends_on:
       - prometheus
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:

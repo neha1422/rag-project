@@ -22,3 +22,9 @@ indic-nlp-library
 regex
 langchain
 langchain-text-splitters
+
+# Monitoring middleware imported by app.py
+prometheus-client>=0.20,<1
+prometheus-fastapi-instrumentator>=7,<8
+# FastAPI TestClient and regression validators
+httpx>=0.28,<1
