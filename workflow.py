@@ -351,6 +351,10 @@ def _resume_pending(
         value = _clean_follow_up_value(question)
         if not value or len(value.split()) > 7:
             return None
+    elif intent == "mandi_price" and "market" in pending.get("missing_fields", []):
+        value = _clean_follow_up_value(question)
+        if not value or len(value.split()) > 8 or _contains_any(canonical_for_routing(value), WEATHER_TERMS + PMKISAN_TERMS + SCHEME_TERMS):
+            return None
     elif not _is_context_follow_up(question):
         return None
 
@@ -373,6 +377,21 @@ def _resume_pending(
             answer_language=answer_language,
             workflow_state="resumed",
             workflow_context=_active_context("weather", original_question, slots, answer_language),
+        )
+
+    if intent == "mandi_price" and "market" in missing_fields:
+        state_name = parse_state(value)
+        if state_name:
+            slots["state"] = state_name
+        # Preserve the full response for exact matching against the official directory.
+        # A state-only response must not be interpreted as a market.
+        if not state_name or canonical_for_routing(value).strip() != state_name.lower():
+            slots["market"] = value
+        return _decision(
+            action="dynamic", intent="mandi_price", question=f"{original_question} {value}",
+            slots=slots, route="dynamic_router", route_reason="mandi_price_live_data",
+            tool_used="mandi", answer_kind="router_direct", answer_language=answer_language,
+            workflow_state="resumed", workflow_context=_active_context("mandi_price", original_question, slots, answer_language),
         )
 
     if intent == "mandi_price" and "commodity" in missing_fields:

@@ -1027,6 +1027,10 @@ def verify_workflow_evidence(
     status = "passed" if passed else "failed"
     if live_status == "needs_more_input":
         status = "needs_more_input"
+    elif live_status and live_status.startswith("unavailable_"):
+        status = "unavailable"
+    elif live_status == "stale":
+        status = "stale"
 
     return {
         "status": status,
@@ -1194,7 +1198,11 @@ def query(
             }
 
             # Only synthesize when live evidence passed verification.
-            if verifier["status"] == "passed":
+            if verifier["status"] == "passed" and dynamic.get("data_provider") == "agmarknet.gov.in":
+                # Keep the official report's exact price, unit, variety and date.
+                synthesis["generation_status"] = "verified_official_report"
+                synthesis["llm_provider"] = "official_report"
+            elif verifier["status"] == "passed":
                 chain = get_chain(payload.n_results)
                 track_generation_call(chain)
 
@@ -1237,6 +1245,16 @@ def query(
                 ),
             }
 
+            if dynamic.get("missing_fields"):
+                result["missing_fields"] = dynamic["missing_fields"]
+                result["workflow_state"] = "awaiting_input"
+                result["answer_kind"] = "clarification"
+                result["workflow_context"] = {"pending": {
+                    "intent": decision["intent"], "question": decision["question"],
+                    "filled_slots": decision["filled_slots"],
+                    "missing_fields": dynamic["missing_fields"],
+                    "answer_language": decision["answer_language"],
+                }}
             for key in [
                 "live_status",
                 "data_provider",

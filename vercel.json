@@ -15,7 +15,8 @@
     "CHROMA_RUNTIME_COPY": "true",
     "HF_HUB_OFFLINE": "1",
     "TRANSFORMERS_OFFLINE": "1",
-    "LLM_PROVIDER": "auto"
+    "LLM_PROVIDER": "auto",
+    "MANDI_PRIMARY_PROVIDER": "agmarknet_public"
   },
   "regions": [
     "bom1"

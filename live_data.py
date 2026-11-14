@@ -33,7 +33,7 @@ AGMARKNET_API_BASE = os.environ.get(
     "AGMARKNET_API_BASE",
     "https://api.data.gov.in/resource",
 )
-ENAM_LIVE_PRICE_URL = "https://enam.gov.in/web/dashboard/live_price"
+ENAM_LIVE_PRICE_URL = "https://enam.gov.in/dashboard/live_price"
 AGMARKNET_PORTAL_URL = "https://agmarknet.gov.in/"
 IMD_URL = "https://mausam.imd.gov.in/"
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
@@ -249,6 +249,53 @@ def _mandi_sources(text: str = "Current mandi prices should be checked on offici
     ]
 
 
+def _public_mandi_fallback(question: str, commodity: str, state: Optional[str],
+                           district: Optional[str], market: Optional[str], farmer_hindi: bool) -> Optional[dict[str, Any]]:
+    from mandi_public import lookup
+    try:
+        report = lookup(commodity, question, state=state, district=district, market=market)
+    except (requests.RequestException, ValueError, KeyError, TypeError):
+        logging.getLogger("krishinyay.live_data").warning("Official AGMARKNET fallback unavailable")
+        return None
+    status = report.pop("status")
+    sources = [{
+        "display": "AGMARKNET Official Market Price Report", "url": "https://agmarknet.gov.in/",
+        "category": "market_prices", "state": report.get("state", state or "india"),
+        "source": "official_portal", "doc_type": "Live API", "similarity": None,
+        "text": "Official market-specific report; the observation date and unit are preserved.",
+    }]
+    if status == "needs_more_input":
+        suggestions = report.get("suggestions", [])
+        answer = (f"{commodity} ka bhav kis mandi mein chahiye? Mandi/city aur state batayein (jaise Indore APMC, Madhya Pradesh)."
+                  if farmer_hindi else f"Which mandi do you mean for {commodity}? Tell me the market/city and state (for example, Indore APMC, Madhya Pradesh).")
+        if suggestions:
+            answer += ("\nOfficial report mein available mandis: " if farmer_hindi else "\nMarkets listed for this commodity: ") + "; ".join(suggestions)
+        result = _base_dynamic_response(reason="mandi_price_live_data", answer=answer, sources=sources,
+                                        live_status=status, provider="agmarknet.gov.in", live_data={"commodity": commodity, **report})
+        result["missing_fields"] = ["market"]
+        return result
+    if status not in {"success", "stale"}:
+        return None
+    price = f"{report['reported_price']:,.2f}".rstrip("0").rstrip(".")
+    unit = report["price_unit"]
+    amount = f"₹{price}/quintal" if re.sub(r"[^a-z]", "", unit.lower()) == "rsquintal" else f"{price} {unit}"
+    place = f"{report['market']}, {report['state']}"
+    date = report["arrival_date"]
+    if farmer_hindi:
+        answer = f"Official AGMARKNET report: {place} mein {report['variety']} ka reported bhav {amount} tha ({date})."
+        if not report["is_today"]:
+            answer += " Yeh aaj ka live quote nahi hai; yeh latest available dated report hai."
+        answer += " Bechne se pehle apni mandi mein bhav verify karein."
+    else:
+        answer = f"Official AGMARKNET report: {report['variety']} at {place} was reported at {amount} on {date}."
+        if not report["is_today"]:
+            answer += " This is the latest available dated report, not today's live quote."
+        answer += " Verify the price with your mandi before selling."
+    sources[0]["text"] = answer
+    return _base_dynamic_response(reason="mandi_price_live_data", answer=answer, sources=sources,
+                                  live_status=status, provider="agmarknet.gov.in", live_data={"commodity": commodity, **report})
+
+
 def get_mandi_price_snapshot(
     question: str,
     *,
@@ -260,7 +307,7 @@ def get_mandi_price_snapshot(
 ) -> dict[str, Any]:
     commodity_name = parse_commodity(question, commodity)
     state_name = parse_state(question, state)
-    api_key = os.environ.get("DATA_GOV_IN_API_KEY") or os.environ.get("AGMARKNET_API_KEY")
+    api_key = (os.environ.get("DATA_GOV_IN_API_KEY") or os.environ.get("AGMARKNET_API_KEY") or "").strip()
     farmer_hindi = _is_farmer_hindi(question, answer_language)
 
     if not commodity_name:
@@ -282,6 +329,12 @@ def get_mandi_price_snapshot(
             live_status="needs_more_input",
             provider="data.gov.in_agmarknet",
         )
+
+    public_primary = os.environ.get("MANDI_PRIMARY_PROVIDER", "data_gov_in").strip() == "agmarknet_public"
+    if public_primary:
+        fallback = _public_mandi_fallback(question, commodity_name, state_name, district, market, farmer_hindi)
+        if fallback:
+            return fallback
 
     if not api_key:
         answer = (
@@ -320,6 +373,10 @@ def get_mandi_price_snapshot(
     try:
         payload = _request_json(f"{AGMARKNET_API_BASE}/{AGMARKNET_RESOURCE_ID}", params)
     except Exception as exc:
+        if isinstance(exc, requests.RequestException) and not public_primary:
+            fallback = _public_mandi_fallback(question, commodity_name, state_name, district, market, farmer_hindi)
+            if fallback:
+                return fallback
         safe_error = _sanitize_live_error(exc)
         answer = (
             f"Abhi {commodity_name} ka live mandi bhav fetch nahi ho paya "
@@ -599,8 +656,8 @@ def get_weather_forecast(
 
 def live_config_status() -> dict[str, Any]:
     return {
-        "mandi_provider": "data.gov.in_agmarknet",
-        "mandi_api_configured": bool(os.environ.get("DATA_GOV_IN_API_KEY") or os.environ.get("AGMARKNET_API_KEY")),
+        "mandi_provider": "agmarknet.gov.in" if os.environ.get("MANDI_PRIMARY_PROVIDER") == "agmarknet_public" else "data.gov.in_agmarknet",
+        "mandi_api_configured": os.environ.get("MANDI_PRIMARY_PROVIDER") == "agmarknet_public" or bool(os.environ.get("DATA_GOV_IN_API_KEY") or os.environ.get("AGMARKNET_API_KEY")),
         "weather_provider": "open_meteo_with_imd_verification",
         "weather_api_configured": True,
     }

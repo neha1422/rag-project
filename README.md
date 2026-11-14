@@ -20,6 +20,12 @@ Configure `GEMINI_API_KEY` in `.env` for Gemini generation, and `DATA_GOV_IN_API
 
 For scanned PDFs, install Tesseract and its English, Hindi, Marathi, and Punjabi language packs. The Python wrapper alone does not provide an OCR executable.
 
+## Mandi price reliability
+
+Hosted deployments prefer the official AGMARKNET public market reports (`MANDI_PRIMARY_PROVIDER=agmarknet_public`). The configured Data.gov.in API remains a backup. Public directory/report requests never receive your Data.gov.in key. Metadata is cached for one hour and dated price reports for five minutes per instance.
+
+A price query must identify a specific mandi. If the market is missing or ambiguous, the chat asks for it and preserves the crop across the follow-up. Reports show the actual market, variety, observation date and unit. An older report is never described as today's quote, and a failed lookup is not marked as verified price evidence. Example: ask “Aaj soybean ka mandi bhav kya hai?”, then reply “Indore APMC, Madhya Pradesh”.
+
 ## Docker and monitoring
 
 ```bash

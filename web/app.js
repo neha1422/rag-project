@@ -184,7 +184,7 @@ function workflowEvidenceLabel(data) {
 function workflowEvidenceStatus(data) {
   if (data.evidence_verified) return "done";
   if (data.evidence_verifier?.status === "needs_more_input") return "waiting";
-  if (data.evidence_verifier?.status === "failed") return "blocked";
+  if (["failed", "unavailable", "stale"].includes(data.evidence_verifier?.status)) return "blocked";
   return data.sources?.length ? "done" : "waiting";
 }
 
@@ -265,7 +265,7 @@ function renderRouteTrace(data) {
     ? `<span class="sticky-badge badge-gray">${escapeHtml(data.answer_kind)}</span>`
     : "";
   const liveStatus = data.live_status
-    ? `<span class="sticky-badge badge-green">${escapeHtml(data.live_status)}</span>`
+    ? `<span class="sticky-badge ${data.live_status === "success" ? "badge-green" : "badge-yellow"}">${escapeHtml(({success: "Report retrieved", needs_more_input: "Choose mandi/location", stale: "Older report", unavailable_api_error: "Provider unavailable", unavailable_no_records: "No matching report", unavailable_missing_api_key: "API not configured"})[data.live_status] || data.live_status)}</span>`
     : "";
   const dataProvider = data.data_provider
     ? `<span class="sticky-badge badge-gray">${escapeHtml(data.data_provider)}</span>`

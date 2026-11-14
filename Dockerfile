@@ -9,6 +9,7 @@ ENV CHROMA_PATH=demo_chroma_db
 ENV CHUNKS_DIR=demo_data/chunks
 ENV CHROMA_RUNTIME_COPY=true
 ENV ENABLE_LIVE_INGEST=false
+ENV MANDI_PRIMARY_PROVIDER=agmarknet_public
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr tesseract-ocr-hin tesseract-ocr-mar tesseract-ocr-pan \
