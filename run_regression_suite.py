@@ -46,7 +46,7 @@ def main() -> int:
 
     python = sys.executable
     env = os.environ.copy()
-    env.setdefault("PYTHONPYCACHEPREFIX", "/private/tmp/krishinyay_pycache")
+    env.setdefault("PYTHONPYCACHEPREFIX", str(Path(tempfile.gettempdir()) / "krishinyay_pycache"))
     runtime_chroma = Path(tempfile.gettempdir()) / "krishinyay_regression_chroma"
     if runtime_chroma.exists():
         shutil.rmtree(runtime_chroma)
