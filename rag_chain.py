@@ -113,36 +113,30 @@ def _call_anthropic(prompt: str) -> str:
     return msg.content[0].text.strip()
 
 def _call_gemini(prompt: str) -> str:
-    """Call Gemini using the official Google GenAI SDK."""
-    import os
-    from google import genai
+    """Call Gemini REST using the existing requests runtime dependency."""
+    import requests
 
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("Gemini API key is not configured.")
-
-    client = genai.Client(api_key=api_key)
-
-    model = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
-
-    try:
-        response = client.models.generate_content(
-            model=model,
-            contents=prompt,
-        )
-    except Exception:
-        import traceback
-        traceback.print_exc()
-        raise
-
-    try:
-        answer = response.text.strip()
-    except Exception as exc:
-        raise RuntimeError("Gemini returned an unusable response.") from exc
-
+    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite").strip()
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", model):
+        raise RuntimeError("Invalid Gemini model name.")
+    response = requests.post(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+        headers={"x-goog-api-key": api_key},
+        json={
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 700},
+        },
+        timeout=60,
+    )
+    response.raise_for_status()
+    candidates = response.json().get("candidates") or []
+    parts = (candidates[0].get("content") or {}).get("parts", []) if candidates else []
+    answer = "\n".join(part["text"] for part in parts if part.get("text") and not part.get("thought")).strip()
     if not answer:
         raise RuntimeError("Gemini returned an empty response.")
-
     return answer
 
 
